@@ -1,0 +1,14 @@
+syntax = "proto3";
+option go_package = ".";
+package proto;
+// Build command:
+//  protoc --go_out=. --go_opt=paths=source_relative message.proto
+//  protoc --go_out=. --go-grpc_out=. message.proto
+message Message {
+  string text = 1;
+}
+
+service ChatService{
+  rpc SayHello(Message) returns (Message) {}
+  rpc ChatStream(stream Message) returns (stream Message);
+}
