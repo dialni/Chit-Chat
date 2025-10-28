@@ -27,7 +27,10 @@ const (
 //	protoc --go_out=. --go-grpc_out=. message.proto
 type Message struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Text          string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
+	MsgType       int32                  `protobuf:"varint,1,opt,name=MsgType,proto3" json:"MsgType,omitempty"`
+	Timestamp     int64                  `protobuf:"varint,2,opt,name=Timestamp,proto3" json:"Timestamp,omitempty"`
+	Username      string                 `protobuf:"bytes,3,opt,name=Username,proto3" json:"Username,omitempty"`
+	Text          string                 `protobuf:"bytes,4,opt,name=Text,proto3" json:"Text,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -62,6 +65,27 @@ func (*Message) Descriptor() ([]byte, []int) {
 	return file_message_proto_rawDescGZIP(), []int{0}
 }
 
+func (x *Message) GetMsgType() int32 {
+	if x != nil {
+		return x.MsgType
+	}
+	return 0
+}
+
+func (x *Message) GetTimestamp() int64 {
+	if x != nil {
+		return x.Timestamp
+	}
+	return 0
+}
+
+func (x *Message) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
 func (x *Message) GetText() string {
 	if x != nil {
 		return x.Text
@@ -73,9 +97,12 @@ var File_message_proto protoreflect.FileDescriptor
 
 const file_message_proto_rawDesc = "" +
 	"\n" +
-	"\rmessage.proto\x12\x05proto\"\x1d\n" +
-	"\aMessage\x12\x12\n" +
-	"\x04text\x18\x01 \x01(\tR\x04text2m\n" +
+	"\rmessage.proto\x12\x05proto\"q\n" +
+	"\aMessage\x12\x18\n" +
+	"\aMsgType\x18\x01 \x01(\x05R\aMsgType\x12\x1c\n" +
+	"\tTimestamp\x18\x02 \x01(\x03R\tTimestamp\x12\x1a\n" +
+	"\bUsername\x18\x03 \x01(\tR\bUsername\x12\x12\n" +
+	"\x04Text\x18\x04 \x01(\tR\x04Text2m\n" +
 	"\vChatService\x12,\n" +
 	"\bSayHello\x12\x0e.proto.Message\x1a\x0e.proto.Message\"\x00\x120\n" +
 	"\n" +

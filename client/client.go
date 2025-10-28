@@ -4,7 +4,6 @@ import (
 	p "Chit-Chat/proto"
 	"bufio"
 	"fmt"
-	"io"
 	"log"
 	"os"
 
@@ -13,15 +12,25 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+// todo: change log messages to correct form
 func ListenForMessages(stream grpc.BidiStreamingClient[p.Message, p.Message]) {
 	for {
 		msg, err := stream.Recv()
-		if err == io.EOF {
-			return
-		} else if err != nil {
-			log.Fatalf("failed to receive a message: %v", err)
+		if err != nil {
+			log.Fatalf("Lost connection to server: %v", err)
 		}
-		fmt.Printf("%s says: %s\n", "Server", msg.Text)
+
+		switch msg.MsgType {
+		case 0:
+			log.Printf("%v - [SERVER]: %s has joined the chat!", msg.GetTimestamp(), msg.GetUsername())
+			break
+		case 1:
+			log.Printf("%v - [%s]: %s", msg.GetTimestamp(), msg.GetUsername(), msg.GetText())
+			break
+		case 2:
+			log.Printf("%v - [SERVER]: %s has left the chat!", msg.GetTimestamp(), msg.GetUsername())
+			break
+		}
 	}
 }
 
@@ -33,13 +42,7 @@ func main() {
 	defer conn.Close()
 
 	c := p.NewChatServiceClient(conn)
-	msg := p.Message{Text: "Hello from client!"}
 
-	resp, err := c.SayHello(context.Background(), &msg)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println("Response from server: ", resp.Text)
 	stream, err := c.ChatStream(context.Background())
 	if err != nil {
 		log.Fatal(err)
@@ -49,11 +52,13 @@ func main() {
 	fmt.Println("Enter a username: ")
 	in := bufio.NewScanner(os.Stdin)
 	in.Scan()
-	uname := in.Text()
+	u := in.Text()
 
-	fmt.Printf("Welcome %s, say hello in the chat!\n", uname)
+	stream.Send(&p.Message{MsgType: 0, Username: u, Text: "", Timestamp: 0})
+
+	fmt.Printf("Welcome %s, say hello in the chat!\n", u)
 	for in.Scan() {
 		text := in.Text()
-		stream.Send(&p.Message{Text: text})
+		stream.Send(&p.Message{MsgType: 1, Username: u, Text: text, Timestamp: 0})
 	}
 }
