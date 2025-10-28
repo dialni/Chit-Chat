@@ -22,9 +22,15 @@ type Server struct {
 }
 
 // todo: change log messages to correct form
+// MessageBroker is the main logic behind broadcasting data and keeping track of the logical time (Lamport timestamp).
+// This architecture was chosen, as it can handle multiple concurrent requests, without any race conditions.
 func MessageBroker(s *Server) {
-	log.Println("[SERVER]: Starting MessageBroker")
+	log.Println("0 - [SERVER]: Starting MessageBroker")
+
+	// We make a slice to store all of our active connections. Order does not matter.
 	s.clients = make([]p.ChatService_ChatStreamServer, 0)
+
+	// We make a channel to receive data from the active goroutines, which listen for incoming traffic from clients.
 	s.brokerChan = make(chan BrokerMessage)
 	var nextMsg BrokerMessage
 	var resp p.Message
@@ -32,39 +38,49 @@ func MessageBroker(s *Server) {
 
 	for {
 		nextMsg = <-s.brokerChan
-		logicalTime++
 		switch nextMsg.MsgType {
+
+		// A new client has joined the chat
 		case 0:
+			// Add the new clients stream pointer to our slice, for easy broadcasting
 			s.clients = append(s.clients, *nextMsg.Stream)
-			resp = p.Message{MsgType: 0, Username: nextMsg.User, Text: "", Timestamp: logicalTime}
 			for _, client := range s.clients {
 				if client != nil {
-					log.Printf("[SERVER]: Sending 'Join' message to client %v\n", client)
+					// Every notification delivered to a client is a separate event observed
+					logicalTime++
+					resp = p.Message{MsgType: 0, Username: nextMsg.User, Text: "", Timestamp: logicalTime}
+					log.Printf("%v - [SERVER]: Sending 'Join' message to client %v\n", logicalTime, client)
 					_ = client.Send(&resp)
 				}
 			}
 			break
 
+		// Client sends a message
 		case 1:
-			resp = p.Message{MsgType: 1, Username: nextMsg.User, Text: nextMsg.Text, Timestamp: logicalTime}
 			for _, client := range s.clients {
 				if client != nil {
-					log.Printf("[SERVER]: Sending 'Text' message to client %v\n", client)
+					// Every message delivered to a client is a separate event observed.
+					// This also makes it easy to track clients, as their logical time will match the servers.
+					logicalTime++
+					resp = p.Message{MsgType: 1, Username: nextMsg.User, Text: nextMsg.Text, Timestamp: logicalTime}
+					log.Printf("%v - [SERVER]: Sending 'Text' message to client %v\n", logicalTime, client)
 					_ = client.Send(&resp)
 				}
 			}
 			break
-
+		// A client has disconnected from the server
 		case 2:
-			// if not sender, broadcast leave msg. if sender, remove from list
-			resp = p.Message{MsgType: 2, Username: nextMsg.User, Text: "", Timestamp: logicalTime}
+			// If not the disconnected sender, broadcast leave msg. If sender, remove from list of active connections.
 			for i, client := range s.clients {
 				if client != nil {
+					logicalTime++
 					if client == *nextMsg.Stream {
+						// Perform clean-up by removing disconnected stream pointers from slice.
 						s.clients = append(s.clients[:i], s.clients[i+1:]...)
-						log.Printf("[SERVER]: Removed %v from active connections\n", client)
+						log.Printf("%v - [SERVER]: Removed %v from active connections\n", logicalTime, client)
 					} else {
-						log.Printf("[SERVER]: Sending 'Leave' message to client %v\n", client)
+						resp = p.Message{MsgType: 2, Username: nextMsg.User, Text: "", Timestamp: logicalTime}
+						log.Printf("%v - [SERVER]: Sending 'Leave' message to client %v\n", logicalTime, client)
 						_ = client.Send(&resp)
 					}
 				}
@@ -74,6 +90,8 @@ func MessageBroker(s *Server) {
 	}
 }
 
+// ChatStream is run as a Goroutine whenever a new connection to the grpc server is made.
+// It acts as a per-stream listener, and sends the content it receives to the MessageBroker.
 func (s *Server) ChatStream(stream p.ChatService_ChatStreamServer) error {
 	var lun string // local username for stream
 	for {
@@ -103,9 +121,10 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	log.Printf("server listening at %v", lis.Addr())
+	log.Printf("[SERVER]: Server has started, listening at %v", lis.Addr())
 	p.RegisterChatServiceServer(grpcServer, s)
-	if err := grpcServer.Serve(lis); err != nil {
+	if err = grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
+	log.Println("[SERVER]: Server has stopped.")
 }

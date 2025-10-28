@@ -13,11 +13,12 @@ import (
 )
 
 // todo: change log messages to correct form
+// ListenForMessages is mostly self-explanitory, it listens are parses messages from the server to the clients terminal
 func ListenForMessages(stream grpc.BidiStreamingClient[p.Message, p.Message]) {
 	for {
 		msg, err := stream.Recv()
 		if err != nil {
-			log.Fatalf("Lost connection to server: %v", err)
+			log.Fatalf("[CLIENT]: Lost connection to server.")
 		}
 
 		switch msg.MsgType {
@@ -48,14 +49,17 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Start listening for messages in the background.
 	go ListenForMessages(stream)
 	fmt.Println("Enter a username: ")
 	in := bufio.NewScanner(os.Stdin)
 	in.Scan()
 	u := in.Text()
 
+	// Send a "I have joined the chat" message to the server, which is broadcasted by the server to everyone
 	stream.Send(&p.Message{MsgType: 0, Username: u, Text: "", Timestamp: 0})
 
+	// Inform the user, that the client is ready for input
 	fmt.Printf("Welcome %s, say hello in the chat!\n", u)
 	for in.Scan() {
 		text := in.Text()

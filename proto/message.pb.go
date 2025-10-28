@@ -23,7 +23,6 @@ const (
 
 // Build command:
 //
-//	protoc --go_out=. --go_opt=paths=source_relative message.proto
 //	protoc --go_out=. --go-grpc_out=. message.proto
 type Message struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -102,9 +101,8 @@ const file_message_proto_rawDesc = "" +
 	"\aMsgType\x18\x01 \x01(\x05R\aMsgType\x12\x1c\n" +
 	"\tTimestamp\x18\x02 \x01(\x03R\tTimestamp\x12\x1a\n" +
 	"\bUsername\x18\x03 \x01(\tR\bUsername\x12\x12\n" +
-	"\x04Text\x18\x04 \x01(\tR\x04Text2m\n" +
-	"\vChatService\x12,\n" +
-	"\bSayHello\x12\x0e.proto.Message\x1a\x0e.proto.Message\"\x00\x120\n" +
+	"\x04Text\x18\x04 \x01(\tR\x04Text2?\n" +
+	"\vChatService\x120\n" +
 	"\n" +
 	"ChatStream\x12\x0e.proto.Message\x1a\x0e.proto.Message(\x010\x01B\x03Z\x01.b\x06proto3"
 
@@ -125,12 +123,10 @@ var file_message_proto_goTypes = []any{
 	(*Message)(nil), // 0: proto.Message
 }
 var file_message_proto_depIdxs = []int32{
-	0, // 0: proto.ChatService.SayHello:input_type -> proto.Message
-	0, // 1: proto.ChatService.ChatStream:input_type -> proto.Message
-	0, // 2: proto.ChatService.SayHello:output_type -> proto.Message
-	0, // 3: proto.ChatService.ChatStream:output_type -> proto.Message
-	2, // [2:4] is the sub-list for method output_type
-	0, // [0:2] is the sub-list for method input_type
+	0, // 0: proto.ChatService.ChatStream:input_type -> proto.Message
+	0, // 1: proto.ChatService.ChatStream:output_type -> proto.Message
+	1, // [1:2] is the sub-list for method output_type
+	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
